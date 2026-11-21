@@ -1,0 +1,371 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101827"><title>Dart Sprachzähler V4</title><style>:root{font-family:system-ui,-apple-system,sans-serif;color:#f8fafc;background:#0b1220}*{box-sizing:border-box}body{margin:0}main{max-width:650px;margin:auto;padding:18px 15px 50px}h1{font-size:1.55rem;margin:8px 0 4px}.muted{color:#9baac0;font-size:.88rem}.panel{background:#172338;border:1px solid #30415b;border-radius:16px;padding:16px;margin-top:14px}.row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}.players{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}.player{border:2px solid #34435a;border-radius:14px;padding:15px;text-align:center;background:#1c2a40}.player.active{border-color:#4ade80;background:#183c35}.score{font-size:2.6rem;font-weight:800;font-variant-numeric:tabular-nums}.small{font-size:.8rem;color:#b7c4d6}button,select,input{font:inherit;border-radius:10px;border:1px solid #52647e;padding:12px;color:#fff;background:#263750}button{cursor:pointer;font-weight:650}button:disabled{opacity:.45;cursor:not-allowed}button.primary{background:#16a34a;border-color:#16a34a}button.secondary{background:#37475f}button.danger{background:#873442}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #86efac}input[type=number]{width:100%;font-size:1.5rem;text-align:center}input[type=text]{width:100%}.buttons{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.buttons button{font-size:1.15rem}.pill{display:inline-block;padding:5px 9px;border-radius:99px;background:#34445e;font-size:.8rem}.on{background:#166534}.status{min-height:44px;color:#d6e3f3;line-height:1.4}.toggle{display:flex;align-items:center;gap:9px}.toggle input{width:20px;height:20px}.wide{width:100%}.history{max-height:180px;overflow:auto;color:#c5d3e3;font-size:.9rem}.history div{padding:5px 0;border-bottom:1px solid #314159}label{font-size:.9rem}details{margin-top:14px}summary{cursor:pointer;font-weight:650}.hint{color:#c3d0e0;font-size:.86rem;line-height:1.5}@media(min-width:850px){main{max-width:1120px;padding:22px 28px 60px}h1{font-size:2.1rem}.score{font-size:4.4rem}.players{grid-template-columns:repeat(4,minmax(0,1fr))}.player{min-height:150px;display:flex;flex-direction:column;justify-content:center}.panel{padding:22px}button,select,input{min-height:54px;font-size:1.1rem}.buttons button{min-height:62px;font-size:1.4rem}.row{gap:16px}.status{font-size:1.1rem}}@media(min-width:850px) and (orientation:landscape){main{max-width:1250px}.players{margin:18px 0}.score{font-size:4.8rem}}
+nav{display:flex;gap:7px;flex-wrap:wrap;margin:15px 0}nav button{flex:1;min-width:110px}.hidden{display:none!important}.tabs{display:flex;gap:8px}.tabs button{flex:1}.selected{border-color:#4ade80!important;background:#176044!important}.dartgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}.dartgrid button{padding:12px 3px}.statsgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.stat{background:#263750;border-radius:10px;padding:12px}.stat strong{font-size:1.45rem;display:block}.dartpill{padding:10px;border:1px solid #52647e;border-radius:9px;flex:1;text-align:center}.voice{max-width:100%}select{max-width:100%} .session{padding:10px;border-bottom:1px solid #40506a} .note{background:#354328;border-radius:9px;padding:10px;margin:10px 0} @media(min-width:850px){.dartgrid{grid-template-columns:repeat(10,1fr)}}
+</style></head><body><main>
+<h1>🎯 Dart Sprachzähler <span class="pill">Version 4 – Sprachtest 4</span></h1><p class="muted">Einzelpfeile · Ansagen · Spielabend-Statistik · Sicherung</p>
+<nav><button data-tab="play" class="selected">🎯 Spielen</button><button data-tab="stats">📊 Statistiken</button><button data-tab="sessions">📅 Spielabende</button><button data-tab="settings">⚙️ Einstellungen</button></nav>
+<div id="play">
+<section class="panel"><div class="row"><label>Startpunkte <select id="start"><option>501</option><option>301</option></select></label><label>Spieler <select id="count"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label><label class="toggle"><input id="double" type="checkbox" checked>Double-Out</label></div><div id="names"></div><div style="margin-top:12px"><label for="starter">Startspieler für das nächste Leg (automatisch vorgeschlagen, manuell änderbar)</label><select id="starter" style="width:100%;margin-top:6px"></select></div><button class="secondary wide" id="new" style="margin-top:10px">Neues Spiel / Leg starten</button></section>
+<div class="players" id="players"></div>
+<section class="panel"><div class="row"><b id="turn"></b><span class="pill" id="dartCount"></span></div><p class="muted" id="checkout"></p><div class="tabs"><button id="modeDart" class="selected">Einzelne Pfeile</button><button id="modeTotal">Gesamtpunkte</button></div>
+<div id="singleEntry"><p class="hint">Einzelpfeile ausschließlich durch Antippen erfassen. Das Mikrofon ist hier ausgeschaltet.</p><div class="row"><button data-mult="1" class="selected">Single</button><button data-mult="2">Doppel</button><button data-mult="3">Triple</button><button id="miss">Daneben (0)</button><button id="bull">Bull (25)</button><button id="bullseye">Bullseye (50)</button></div><div class="dartgrid" id="dartgrid" style="margin-top:12px"></div><div class="row" id="darts" style="margin-top:12px"></div></div>
+<div id="totalEntry" class="hidden"><p class="hint">Gesamtzahl ansagen (automatische Buchung) oder eintippen, z. B. „hundertachtzig“.</p><input id="points" type="number" min="0" max="180" inputmode="numeric" placeholder="0–180"><button class="primary wide" id="submit" style="margin-top:9px">Aufnahme eintragen</button></div>
+<div class="row" style="margin-top:12px"><button id="undo">↶ Letzte Aufnahme zurücknehmen</button><button id="skip">Spieler wechseln</button></div></section>
+<section class="panel"><div class="row"><b>🎤 Sprachsteuerung</b><span class="pill" id="micState">Aus</span></div><p class="hint">Nur im Modus „Gesamtpunkte“: Mikrofon einschalten und eine Gesamtzahl sagen. Nach ca. 1,25 Sekunden Pause wird automatisch gebucht. Bei einer falschen Zahl „Letzte Aufnahme zurücknehmen“ antippen und erneut ansagen. Beim Double-Out-Checkout ist weiterhin eine Rückfrage nötig. Offlinefähigkeit hängt von Chrome und dem Handy ab.</p><label class="toggle"><input type="checkbox" id="auto">Automatisch zuhören</label><button class="primary wide" id="mic" style="margin-top:10px">🎤 Zuhören starten</button><p id="status" class="status" role="status" aria-live="polite">Bereit.</p><p id="heard" class="muted">Noch keine Ansage erkannt.</p><div id="voiceChoices" class="hidden" style="margin-top:10px"></div></section>
+<section class="panel"><b>Letzte Aktionen</b><div id="history" class="history"></div></section></div>
+<div id="stats" class="hidden"><section class="panel"><h2>📊 Statistiken</h2><div class="row"><label>Spieler <select id="statPlayer"></select></label><label>Zeitraum <select id="statPeriod"><option value="game">Aktuelles Spiel</option><option value="session" selected>Aktueller Spielabend</option><option value="all">Gesamte Historie</option></select></label></div><div id="statCards" class="statsgrid" style="margin-top:15px"></div><h3>Treffer je Feld</h3><p class="hint">Nur einzeln erfasste Pfeile ergeben genaue Trefferfelder. Gesamtansagen zählen zum Average, nicht zur Feldverteilung.</p><div id="fieldStats"></div><h3>Letzte Spielabende</h3><div id="trend"></div><details id="manageStats"><summary>🗑️ Statistiken verwalten</summary><p class="hint">Nur bei Bedarf öffnen. Vor dem Löschen am besten unter „Einstellungen“ eine JSON-Sicherung herunterladen.</p><label for="deleteScope">Was möchtest du löschen?</label><select id="deleteScope" class="wide" style="margin-top:7px"><option value="player">Statistik des oben ausgewählten Spielers (gesamte Historie)</option><option value="session">Statistiken des aktuellen Spielabends (alle Spieler)</option><option value="all">Alle Statistiken und Testdaten</option></select><button id="deleteStats" class="danger wide" style="margin-top:10px">Ausgewählte Statistiken löschen …</button><p class="hint">Spielernamen, Spielregeln und Spracheinstellungen bleiben erhalten. Falls das aktuelle Leg betroffen ist, wird es neu begonnen.</p></details></section></div>
+<div id="sessions" class="hidden"><section class="panel"><h2>📅 Spielabende</h2><p class="hint">Ein Abend kann mehrere Legs enthalten. Ein neuer Abend beendet die bisherige Session, ohne die Historie zu löschen.</p><button id="newSession" class="primary wide">Neuen Dart-Abend beginnen</button><div id="sessionList"></div></section></div>
+<div id="settings" class="hidden"><section class="panel"><h2>🔊 Stimmen und Ansagen</h2><label class="toggle"><input id="speak" type="checkbox">Punktestand vorlesen</label><label class="toggle"><input id="announceTurn" type="checkbox">Spielerwechsel mit Namen ansagen</label><label class="toggle"><input id="announceWin" type="checkbox">Gewinner mit Namen ansagen</label><p><label>Deutsche Stimme <select class="voice wide" id="voice"></select></label></p><label>Sprechgeschwindigkeit <input type="range" id="rate" min="0.75" max="1.25" step="0.05"><span id="rateLabel"></span></label><button id="testVoice" class="wide">🔊 Stimme testen</button></section><section class="panel"><h2>💾 Datensicherung</h2><p class="hint">Alle Daten bleiben in diesem Browser gespeichert. Übertrage eine Sicherungsdatei auf dein Tablet und importiere sie dort. Keine automatische Synchronisierung.</p><button class="primary wide" id="export">Sicherung herunterladen (JSON)</button><p><label>Gespeicherte Sicherung auswählen <input id="importFile" type="file" accept=".json,application/json"></label></p><button class="wide" id="import">Sicherung importieren</button><p class="hint">Beim Import werden die vorhandenen Daten nach Bestätigung ersetzt. Sichere sie vorher mit „Sicherung herunterladen“.</p></section></div>
+<p class="hint">Version 4 · Testversion. Bei Browserdaten-Löschung können lokale Statistiken verloren gehen. Regelmäßig Sicherungen herunterladen.</p>
+</main><script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id),KEY='dart-scorer-v4';
+const now=()=>new Date().toISOString(),sid=()=>String(Date.now())+'-'+Math.random().toString(36).slice(2,7);
+const defaultState=()=>({version:4,players:['Spieler 1','Spieler 2'],start:501,double:true,scores:[501,501],current:0,winner:null,darts:[],mode:'dart',events:[],history:[],sessions:[{id:sid(),started:now()}],sessionId:null,gameId:sid(),legStarter:0,prefs:{speak:true,announceTurn:true,announceWin:true,voice:'',rate:1}});
+let s=defaultState();s.sessionId=s.sessions[0].id;
+try{let x=JSON.parse(localStorage.getItem(KEY)||'null');if(x&&x.version===4&&Array.isArray(x.events)&&Array.isArray(x.sessions))s=x}catch{}
+// Alte Sicherungen können verschachtelte Undo-Verläufe enthalten.
+if(!Array.isArray(s.history))s.history=[];
+s.history=[]; // Veraltete Undo-Daten bewusst nicht übernehmen; Spielstände und Treffer bleiben erhalten.
+ if(!Number.isInteger(s.legStarter)||s.legStarter<0||s.legStarter>=s.players.length)s.legStarter=0;
+let mult=1,rec=null,phase='idle',wantAuto=false,speaking=false,restart=null,speechFallback=null,voices=[];
+let storageOK=true;
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(s));storageOK=true;return true}catch(e){storageOK=false;status('Speichern fehlgeschlagen! Bitte Sicherung herunterladen.');return false}};
+const name=i=>s.players[i]||('Spieler '+(i+1));
+function status(t){$('status').textContent=t}
+function snapshot(){return {scores:[...s.scores],current:s.current,winner:s.winner,darts:s.darts.map(d=>({...d})),eventsLength:s.events.length}}
+function record(action){s.history.push({state:snapshot(),action});if(s.history.length>30)s.history.shift()}
+function event(type,data){s.events.push({id:sid(),date:now(),sessionId:s.sessionId,gameId:s.gameId,type,...data})}
+function say(t,enabled=true){if(!enabled||!('speechSynthesis'in window))return;try{speaking=true;clearTimeout(restart);if(rec&&phase!=='idle'){phase='stopping';micUI();try{rec.abort()}catch{}}speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(t);u.lang='de-DE';u.rate=Number(s.prefs.rate)||1;let v=voices.find(x=>x.voiceURI===s.prefs.voice);if(v)u.voice=v;let done=false;const finish=()=>{if(done)return;done=true;speaking=false;if(wantAuto)restart=setTimeout(startRec,500)};u.onend=finish;u.onerror=e=>{status('Sprachausgabe: '+(e.error||'Fehler')+'. Bitte Tablet-Sprachdienste prüfen.');finish()};speechSynthesis.resume();speechSynthesis.speak(u);clearTimeout(speechFallback);speechFallback=setTimeout(finish,12000)}catch{speaking=false}}
+function announce(player,rest,bust=false){let words=[];if(s.prefs.speak)words.push(name(player)+(bust?', Bust, weiterhin ':' , noch ')+rest+' Punkte');if(s.prefs.announceTurn&&s.winner===null)words.push(name(s.current)+' ist dran');if(words.length)say(words.join('. '))}
+function turnEnd(bust=false,fromPlayer=s.current,silent=false){let rest=s.scores[fromPlayer];let visitPoints=bust?0:s.darts.reduce((a,d)=>a+d.value,0);s.darts=[];s.current=(fromPlayer+1)%s.players.length;if(s.mode==='dart'){let words=[];if(s.prefs.speak)words.push(bust?'Bust, null Punkte':visitPoints+' Punkte');if(s.prefs.announceTurn)words.push(name(s.current)+' ist dran');if(words.length)say(words.join('. '))}else if(!silent)announce(fromPlayer,rest,bust)}
+function finishWin(player,silent=false){s.winner=player;event('win',{player});updateStarterChoice((s.legStarter+1)%s.players.length);if(s.prefs.announceWin&&!silent)say('Glückwunsch, '+name(player)+' hat das Leg gewonnen!')}
+function applyDart(value,label,isDouble=false,field=null){if(s.winner!==null)return;let player=s.current;record('Pfeil');let old=s.scores[player],rest=old-value,bust=rest<0||(s.double&&rest===1)||(rest===0&&s.double&&!isDouble);s.darts.push({value,label,isDouble,field});event('dart',{player,value,label,field,bust,restBefore:old});if(bust){s.scores[player]=old+s.darts.slice(0,-1).reduce((a,d)=>a+d.value,0); // restore score at beginning of this visit
+ event('bust',{player});turnEnd(true,player);status('Bust! Aufnahme zählt 0.');}
+else{s.scores[player]=rest;if(rest===0){finishWin(player);status('🏆 '+name(player)+' gewinnt!')}else if(s.darts.length===3){turnEnd(false,player);status('3 Pfeile erfasst – nächster Spieler.')}else status(label+' erfasst · Pfeil '+s.darts.length+' von 3');}
+render();if(!storageOK)status('Speichern fehlgeschlagen! Bitte Sicherung herunterladen.')}
+function applyTotal(value){if(s.winner!==null)return;if(!Number.isInteger(value)||value<0||value>180||value===179){status('Nur 0 bis 180 Punkte möglich.');return}let p=s.current,old=s.scores[p],rest=old-value,bust=rest<0||(s.double&&rest===1),validDouble=false;if(rest===0&&s.double){validDouble=confirm('War der letzte Pfeil ein Doppel?\nOK = Ja, Abbrechen = Nein (Bust)');if(!validDouble)bust=true}record('Aufnahme');event('total',{player:p,value,bust,restBefore:old});if(!bust)s.scores[p]=rest;if(!bust&&rest===0){finishWin(p,true)}else{turnEnd(bust,p,true)}const remaining=s.scores[p];say(bust?'Erkannt: '+value+'. Bust. Weiterhin '+remaining+' Punkte.':'Erkannt: '+value+'. Noch '+remaining+' Punkte.'+(s.winner===p?' '+name(p)+' gewinnt.':''));status(bust?'Bust – Aufnahme zählt 0.':'Aufnahme: '+value+' Punkte');$('points').value='';render()}
+function undo(){
+ let h=s.history.pop();
+ if(!h){status('Nichts zum Rückgängigmachen.');return}
+ // Offene Spracheingaben verwerfen, damit die alte Ansage nicht erneut bucht.
+ clearTimeout(speechTimer);speechTimer=null;speechBuffer='';
+ lastTranscript='';lastTranscriptAt=0;
+ let st=h.state;
+ s.scores=[...st.scores];s.current=st.current;s.winner=st.winner;
+ s.darts=st.darts.map(d=>({...d}));s.events.length=st.eventsLength;
+ $('heard').textContent='Letzte Aufnahme zurückgenommen – Zahl erneut ansagen.';
+ render();
+ status('Zurückgenommen. '+name(s.current)+' hat wieder '+s.scores[s.current]+' Punkte. Bitte Zahl erneut ansagen.');
+ if(s.mode==='total'&&wantAuto){
+  say('Zurückgenommen. Noch '+s.scores[s.current]+' Punkte. Bitte erneut ansagen.');
+ }
+}
+function skip(){if(s.winner!==null)return;record('Wechsel');event('skip',{player:s.current});let p=s.current;turnEnd(false,p);render();status('Spieler gewechselt.')}
+function render(){const players=$('players');players.innerHTML='';s.scores.forEach((v,i)=>{let el=document.createElement('div');el.className='player'+(s.current===i?' active':'');let a=document.createElement('b'),b=document.createElement('div'),c=document.createElement('div');a.textContent=name(i);b.className='score';b.textContent=v;c.className='small';c.textContent=s.winner===i?'🏆 Gewonnen':s.current===i?'● Am Zug':'Wartet';el.append(a,b,c);players.append(el)});$('turn').textContent=s.winner!==null?name(s.winner)+' gewinnt!':name(s.current)+' ist dran';$('dartCount').textContent='Pfeil '+Math.min(s.darts.length+1,3)+' / 3';$('checkout').textContent='Rest: '+s.scores[s.current]+(s.double?' · Double-Out':' · Straight-Out');$('darts').innerHTML='';for(let i=0;i<3;i++){let x=document.createElement('div');x.className='dartpill';x.textContent=s.darts[i]?.label||'Pfeil '+(i+1);$('darts').append(x)}$('history').innerHTML='';s.events.slice(-12).reverse().forEach(e=>{let d=document.createElement('div');d.textContent=(e.type==='dart'?name(e.player)+': '+e.label:e.type==='total'?name(e.player)+': '+e.value+' Punkte':e.type==='win'?name(e.player)+' gewinnt':e.type==='bust'?'Bust':e.type==='skip'?'Spielerwechsel':e.type);$('history').append(d)});if(!s.events.length)$('history').textContent='Noch keine Würfe.';$('undo').disabled=!s.history.length;$('skip').disabled=s.winner!==null;save()}
+function namesUI(){let n=+$('count').value,prior=[...document.querySelectorAll('.name')].map(x=>x.value);$('names').innerHTML='';for(let i=0;i<n;i++){let x=document.createElement('input');x.className='name';x.type='text';x.maxLength=25;x.style.marginTop='8px';x.placeholder='Name Spieler '+(i+1);x.value=prior[i]||s.players[i]||'Spieler '+(i+1);$('names').append(x)}}
+function updateStarterChoice(selected){let sel=$('starter');sel.innerHTML='';let names=[...document.querySelectorAll('.name')].map((e,i)=>e.value.trim()||'Spieler '+(i+1));names.forEach((n,i)=>{let o=document.createElement('option');o.value=i;o.textContent=n;sel.append(o)});sel.value=String(Math.min(Math.max(0,selected),names.length-1))}
+function newGame(){if(s.winner===null&&s.events.some(e=>e.gameId===s.gameId&&['dart','total'].includes(e.type))&&!confirm('Laufendes Leg abbrechen und ein neues starten? Die Statistik bleibt erhalten.'))return;let chosen=+$('starter').value;s.players=[...document.querySelectorAll('.name')].map((e,i)=>e.value.trim()||'Spieler '+(i+1));s.start=+$('start').value;s.double=$('double').checked;s.scores=s.players.map(()=>s.start);s.legStarter=Number.isInteger(chosen)&&chosen>=0&&chosen<s.players.length?chosen:0;s.current=s.legStarter;s.winner=null;s.darts=[];s.gameId=sid();s.history=[];event('gameStart',{starter:s.legStarter});updateStarterChoice(s.legStarter);render();status('Neues Leg gestartet: '+name(s.current)+' beginnt.');if(s.prefs.announceTurn)say(name(s.current)+' ist dran')}
+function setMode(m){if(m!=='total'&&typeof stopRec==='function'){wantAuto=false;$('auto').checked=false;stopRec()}s.mode=m;$('singleEntry').classList.toggle('hidden',m!=='dart');$('totalEntry').classList.toggle('hidden',m!=='total');$('modeDart').classList.toggle('selected',m==='dart');$('modeTotal').classList.toggle('selected',m==='total');save()}
+function addField(v,m=mult){if(v===0)return applyDart(0,'Daneben',false,'MISS');if(v===25)return applyDart(25,'Bull',false,'SB');if(v===50)return applyDart(50,'Bullseye',true,'DB');if(v<1||v>20||m<1||m>3)return;applyDart(v*m,(m===3?'Triple ':m===2?'Doppel ':'Single ')+v,m===2,(m===3?'T':m===2?'D':'S')+v)}
+const nums={null:0,zero:0,ein:1,eins:1,eine:1,zwei:2,drei:3,vier:4,fünf:5,fuenf:5,sechs:6,sieben:7,acht:8,neun:9,zehn:10,elf:11,zwölf:12,zwoelf:12,dreizehn:13,vierzehn:14,fünfzehn:15,fuenfzehn:15,sechzehn:16,siebzehn:17,achtzehn:18,neunzehn:19,zwanzig:20,dreißig:30,dreissig:30,vierzig:40,fünfzig:50,fuenfzig:50,sechzig:60,siebzig:70,achtzig:80,neunzig:90};
+function number(t){let s=t.toLowerCase().replace(/[.,!?]/g,'').replace(/\s+/g,' ').trim();if(/^\d+$/.test(s))return +s;if(nums[s]!==undefined)return nums[s];if(s.includes(' '))return number(s.replace(/ /g,''));let h=s.match(/^(ein|eins|zwei|drei|vier|fünf|fuenf|sechs|sieben|acht|neun)?hundert(.*)$/);if(h){let r=h[2]?number(h[2]):0;return r===null?null:(h[1]?nums[h[1]]:1)*100+r}let m=s.match(/^(ein|eins|zwei|drei|vier|fünf|fuenf|sechs|sieben|acht|neun)und(zwanzig|dreißig|dreissig|vierzig|fünfzig|fuenfzig|sechzig|siebzig|achtzig|neunzig)$/);return m?nums[m[1]]+nums[m[2]]:null}
+function parseDart(raw){let s=raw.toLowerCase().replace(/[.,!?]/g,' ').replace(/\s+/g,' ').trim();if(/^(daneben|vorbei|fehlwurf|fehl wurf|miss|null|zero|null punkte|kein treffer|kein punkt)$/.test(s))return{v:0};if(/^(bullseye|bull eye|bulls eye|bullseye fifty|double bull|doublebull|doppel bull|doppelbull|doppel-bull|inner bull|innerbull|bull 50|bull fünfzig|fünfzig bull|50 bull|50)$/.test(s))return{v:50};if(/^(bull|bulls|single bull|singlebull|einfach bull|outer bull|outerbull|bull 25|bull fünfundzwanzig|25 bull|25)$/.test(s))return{v:25};let bare=number(s);if(bare!==null&&bare>=0&&bare<=20)return{v:bare,m:1};let m=s.match(/^(triple|treble|dreifach|dreifaches|dreifache|t|doppel|double|d|single|einfach|s)\s*(.+)$/);if(m){let n=number(m[2]),f=/^(triple|treble|dreifach|dreifaches|dreifache|t)$/.test(m[1])?3:/^(doppel|double|d)$/.test(m[1])?2:1;if(n>=1&&n<=20)return{v:n,m:f};return null}let n=number(s);if(n>=0&&n<=20)return{v:n,m:1};return null}
+// Mehrere angesagte Treffer auch bei fehlenden Pausen auseinanderhalten.
+// Jede vollständige Ansage wird zuerst geprüft, bevor ein Pfeil gezählt wird.
+function parseVisit(raw){
+ let x=raw.toLowerCase().replace(/[.,;!?]+/g,' ').replace(/\b(und|dann|danach)\b/g,' ').replace(/\s+/g,' ').trim();
+ if(!x)return null;
+ // Zusammengezogene Zahlenfolgen auf bis zu drei einzelne Würfe verteilen.
+ // Bei Unsicherheit wird die VOLLSTÄNDIGE Ansage vor dem Buchen bestätigt.
+ const proposed=[];
+ function splitDigits(token){
+   const out=[];
+   function walk(pos,parts){
+     if(pos===token.length){if(parts.length>=2&&parts.length<=3)out.push(parts);return}
+     if(parts.length>=3)return;
+     for(let len of [2,1]){
+       const t=token.slice(pos,pos+len);
+       if(t.length!==len||(len===2&&t[0]==='0'))continue;
+       const n=Number(t);
+       if(n<=20)walk(pos+len,[...parts,n]);
+     }
+   }
+   walk(0,[]);
+   if(!out.length)return null;
+   // Zwei echte zweistellige Dartfelder haben Vorrang vor künstlichen Einzelziffern.
+   out.sort((a,b)=>a.length-b.length || b.filter(n=>n>=10).length-a.filter(n=>n>=10).length);
+   return out[0];
+ }
+ // Auch nach "Triple" oder "Doppel" kann Chrome zwei Zahlen verschmelzen:
+ // "Doppel 20 Triple 73" bedeutet "Doppel 20 Triple 7 3".
+ // Nur aufteilen, wenn die ganze Zahl kein gültiges Dartfeld ist.
+ x=x.replace(/\b(triple|treble|dreifach|dreifache|dreifaches|doppel|double|single|einfach)\s+(\d{2,6})\b/g,(all,mod,token)=>{
+   const n=Number(token);
+   if(token.length<=2&&n>=1&&n<=20)return all;
+   const parts=splitDigits(token);
+   if(!parts||parts[0]<1||parts[0]>20)return all;
+   proposed.push(token+' → '+parts.join(' und '));
+   return mod+' '+parts.join(' ');
+ });
+ x=x.replace(/\b\d{2,6}\b/g,(token,offset,full)=>{
+   const n=Number(token);
+   if(token.length===2&&!token.startsWith('0')&&(n<=20||n===25||n===50))return token;
+   const before=full.slice(0,offset).trim();
+   if(/(?:^|\s)(?:doppel|double|triple|treble|dreifach|single|einfach)$/.test(before))return token;
+   const parts=splitDigits(token);
+   if(!parts)return token;
+   proposed.push(token+' → '+parts.join(' und '));
+   return parts.join(' ');
+ });
+ // Zahlwörter mit längsten Alternativen zuerst, damit "siebzehn" nicht als "sieben" endet.
+ const words=['zwanzig','neunzehn','achtzehn','siebzehn','sechzehn','fünfzehn','fuenfzehn','vierzehn','dreizehn','zwölf','zwoelf','elf','zehn','neun','acht','sieben','sechs','fünf','fuenf','vier','drei','zwei','eins','eine','ein','null','zero'];
+ const numberPart='(?:\\d{1,2}|'+words.join('|')+')';
+ const modifier='(?:triple|treble|dreifaches|dreifache|dreifach|doppel|double|single|einfach)';
+ const bull=['bullseye','bulls eye','bull eye','double bull','doublebull','doppel bull','doppelbull','doppel-bull','inner bull','innerbull','single bull','singlebull','einfach bull','outer bull','outerbull','bull 50','bull fünfzig','bull 25','bull fünfundzwanzig','bull','bulls'];
+ const misses=['null punkte','kein treffer','kein punkt','fehl wurf','daneben','vorbei','fehlwurf','miss'];
+ const alternatives=[...bull,...misses].sort((a,b)=>b.length-a.length).map(t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
+ const rx=new RegExp('^(?:'+alternatives.join('|')+'|'+modifier+'\\s*'+numberPart+'|'+numberPart+')','i');
+ const results=[];
+ while(x){
+   const m=x.match(rx);
+   if(!m)return null;
+   const matched=m[0];
+   const dart=parseDart(matched);
+   if(!dart)return null;
+   results.push(dart);
+   if(results.length>3)return null;
+   x=x.slice(matched.length).trim();
+   // Keine Teilwörter stillschweigend verschlucken: unbekannte Reste führen zu einer Fehlermeldung.
+ }
+ if(results.length&&proposed.length){
+   const describe=d=>d.v===50?'Doppelbull (50)':d.v===25?'Bull (25)':d.v===0?'Null (0)':(d.m===3?'Triple ':d.m===2?'Doppel ':'Single ')+d.v;
+   results.confirmation=results.map(describe).join(' + ')+' ('+results.reduce((sum,d)=>sum+(d.v===25||d.v===50||d.v===0?d.v:d.v*(d.m||1)),0)+' Punkte)';
+ }
+ return results.length?results:null;
+}
+// Test 12: Die Aufnahme wird erst durch das gesprochene Wort „Ende“ abgeschlossen.
+let voiceBuffer='',voiceOptions=null,voicePrompting=false;
+const voiceChoices=$('voiceChoices');
+function dartText(d){return d.v===50?'Doppelbull':d.v===25?'Bull':d.v===0?'Null':(d.m===3?'Triple ':d.m===2?'Doppel ':'Single ')+d.v}
+function dartPoints(d){return d.v*(d.m||1)}
+function dartSignature(ds){return ds.map(d=>d.v+':'+(d.m||1)).join('|')}
+function choicesFor(raw){
+ const clean=raw.toLowerCase().replace(/\b(ende|fertig)\b/g,' ').replace(/\s+/g,' ').trim();
+ // Alle möglichen Trennungen zusammengezogener Ziffern prüfen, auch 2015 und 20 15.
+ // Eine Deutung darf ein, zwei oder drei gültige Pfeile enthalten.
+ let variants=[clean];
+ for(let pass=0;pass<3;pass++){
+  const next=[...variants];
+  for(const candidate of variants){
+   for(const match of candidate.matchAll(/\b\d{2,6}\b/g)){
+    const token=match[0],pos=match.index;
+    function split(i,parts){
+     if(i===token.length){if(parts.length>1)next.push(candidate.slice(0,pos)+parts.join(' ')+candidate.slice(pos+token.length));return}
+     if(parts.length>=3)return;
+     for(const len of [1,2]){
+      const t=token.slice(i,i+len);
+      if(t.length!==len||(len===2&&t[0]==='0'))continue;
+      if(+t<=20)split(i+len,[...parts,t]);
+     }
+    }
+    split(0,[]);
+   }
+  }
+  variants=[...new Set(next)].slice(0,180);
+ }
+ const unique=new Map();
+ for(const candidate of variants){
+  const ds=parseVisit(candidate);if(!ds||ds.length<1||ds.length>3)continue;
+  const sig=dartSignature(ds);if(!unique.has(sig))unique.set(sig,ds);
+ }
+ return [...unique.values()].sort((a,b)=>b.length-a.length).slice(0,6);
+}
+function hideChoices(){voiceChoices.innerHTML='';voiceChoices.classList.add('hidden');voiceOptions=null}
+function applyVoiceDarts(ds){const player=s.current;for(const d of ds){addField(d.v,d.m);if(s.winner!==null||s.current!==player)break}if(s.winner===null&&s.current===player&&s.darts.length){record('Aufnahme beendet');turnEnd(false,player);render();status('Aufnahme mit '+ds.length+' Pfeil(en) beendet – nächster Spieler.')}}
+function chooseVoice(i){if(!voiceOptions)return;const ds=voiceOptions[i];if(!ds)return;hideChoices();voiceBuffer='';status('Übernommen: '+ds.map(dartText).join(', '));applyVoiceDarts(ds)}
+function cancelVoice(){hideChoices();voiceBuffer='';status('Ansage verworfen. Bitte Würfe erneut ansagen und „Ende“ sagen.');if(wantAuto)say('Ansage verworfen. Bitte erneut ansagen.')}
+function offerChoices(options){voiceOptions=options;voiceChoices.innerHTML='';voiceChoices.classList.remove('hidden');
+ const intro=document.createElement('p');intro.textContent='Bitte per Sprache „Eins“, „Zwei“ usw. sagen oder hier auswählen:';voiceChoices.append(intro);
+ options.forEach((ds,i)=>{let btn=document.createElement('button');btn.className='wide';btn.style.marginTop='7px';btn.textContent=(i+1)+': '+ds.map(dartText).join(' + ')+' = '+ds.reduce((n,d)=>n+dartPoints(d),0)+' Punkte';btn.onclick=()=>chooseVoice(i);voiceChoices.append(btn)});
+ const cancel=document.createElement('button');cancel.textContent='Abbrechen';cancel.className='secondary wide';cancel.style.marginTop='7px';cancel.onclick=cancelVoice;voiceChoices.append(cancel);
+ status('Mehrere Deutungen möglich. Bitte „Eins“, „Zwei“ oder „Abbrechen“ sagen.');
+ const labels=['eins','zwei','drei','vier','fünf','sechs'];
+ say('Ich habe '+options.length+' Möglichkeiten. '+options.map((ds,i)=>'Möglichkeit '+labels[i]+': '+ds.map(dartText).join(', ')+'.').join(' ')+' Bitte sage die Nummer oder Abbrechen.');
+}
+function finalizeVoice(){const raw=voiceBuffer.trim();voiceBuffer='';if(!raw){status('Keine Würfe vor „Ende“ erkannt.');return}
+ const options=choicesFor(raw);$('heard').textContent='Gehört: „'+raw+' Ende“';
+ if(!options.length){status('Keine gültigen Würfe erkannt. Bitte erneut ansagen.');say('Die Würfe wurden nicht eindeutig erkannt. Bitte wiederholen.');return}
+ if(s.darts.length){status('Die aktuelle Aufnahme enthält bereits '+s.darts.length+' Pfeile. Bitte zuerst die Aufnahme beenden oder Rückgängig verwenden.');return}
+ if(options.length===1){const ds=options[0];status('Erkannt: '+ds.map(dartText).join(', '));applyVoiceDarts(ds);return}
+ offerChoices(options);
+}
+function handleVoice(raw){
+ let x=raw.toLowerCase().trim();if(!x)return;
+ // Während einer Rückfrage darf die Antwort nicht als Dartwurf behandelt werden.
+ if(voiceOptions){const answers={eins:0,ein:0,'1':0,erste:0,nummer1:0,zwei:1,'2':1,zweite:1,drei:2,'3':2,dritte:2,vier:3,'4':3,fünf:4,'5':4,sechs:5,'6':5};
+  const answer=x.replace(/^(möglichkeit|nummer|option|die|das ist|ich nehme)\s*/,'').replace(/[.!?\s]/g,'');
+  if(/abbrechen|verwerfen|nochmal|noch mal/.test(x))return cancelVoice();
+  if(Object.prototype.hasOwnProperty.call(answers,answer)&&voiceOptions[answers[answer]])return chooseVoice(answers[answer]);
+  status('Bitte nur die Nummer der Möglichkeit oder „Abbrechen“ sagen.');return;
+ }
+ if(/^(zurück|zurueck|rückgängig)$/.test(x)){voiceBuffer='';return undo()}
+ if(/^(nächster spieler|naechster spieler|weiter|spieler wechseln)$/.test(x)){voiceBuffer='';return skip()}
+ if(s.mode!=='dart'){let v=number(x.replace(/^(ich habe |punkte |geworfen |das sind )/,''));if(v!==null)applyTotal(v);else status('Gesamtpunkte nicht erkannt.');return}
+ // Chrome kann „Ende“ in einem späteren Erkennungsergebnis liefern.
+ const end=/\b(ende|fertig)\b/.test(x);
+ const piece=x.replace(/\b(ende|fertig)\b/g,' ').replace(/\s+/g,' ').trim();
+ if(piece)voiceBuffer=(voiceBuffer+' '+piece).trim();
+ $('heard').textContent='Gehört: „'+voiceBuffer+(end?' Ende':'')+'“';
+ if(end)finalizeVoice();else status('Ansage gesammelt. Bitte nach dem letzten Pfeil „Ende“ sagen.');
+}
+
+// Sprachtest-Logik: nur Gesamtpunkte, nach Sprechpause automatisch buchen.
+const ones={null:0,zero:0,ein:1,eins:1,eine:1,einen:1,einem:1,einer:1,zwei:2,drei:3,vier:4,fuenf:5,sechs:6,sieben:7,acht:8,neun:9,zehn:10,elf:11,zwoelf:12,dreizehn:13,vierzehn:14,fuenfzehn:15,sechzehn:16,siebzehn:17,achtzehn:18,neunzehn:19};
+const tens={zwanzig:20,dreissig:30,vierzig:40,fuenfzig:50,sechzig:60,siebzig:70,achtzig:80,neunzig:90};
+function normalize(s){return s.toLowerCase().replace(/ß/g,'ss').replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/[.,!?;:]/g,' ').replace(/\s+/g,' ').trim()}
+function germanNumber(raw){let s=normalize(raw).replace(/^(?:ich habe |das sind |es sind |punkte |geworfen |insgesamt |gesamt |score |zahl )+/,'').replace(/(?: punkte?| points?)$/,'').trim();if(!s)return null;if(/^\d{1,3}$/.test(s))return +s;if(s in ones)return ones[s];if(s in tens)return tens[s];let t=s.replace(/\s+/g,'');if(t in ones)return ones[t];if(t in tens)return tens[t];if(t==='hundert'||t==='einhundert')return 100;const hundred=t.match(/^(ein|eins|eine|zwei|drei)?hundert(.*)$/);if(hundred){const prefix=hundred[1]||'ein';const base=(prefix==='ein'||prefix==='eins'||prefix==='eine')?1:ones[prefix];if(base===undefined)return null;const rest=hundred[2];const r=rest?germanNumber(rest):0;return r===null?null:base*100+r}for(const [word,val] of Object.entries(tens)){if(t===word)return val;const suffix='und'+word;if(t.endsWith(suffix)){const prefix=t.slice(0,-suffix.length);if(prefix in ones&&ones[prefix]>=1&&ones[prefix]<=9)return val+ones[prefix]}}return null}
+function validScore(n){return Number.isInteger(n)&&n>=0&&n<=180&&n!==179}
+
+const Speech=window.SpeechRecognition||window.webkitSpeechRecognition;
+let speechBuffer='',speechTimer=null,lastTranscript='',lastTranscriptAt=0,voiceBusy=false;
+function micUI(){
+ $('micState').textContent=phase==='active'?'Hört zu':phase==='idle'?'Aus':'Startet …';
+ $('micState').className='pill'+(phase==='active'?' on':'');
+ $('mic').textContent=wantAuto?'⏹ Zuhören stoppen':'🎤 Zuhören starten';
+}
+function commitSpeech(){
+ clearTimeout(speechTimer);speechTimer=null;
+ if(speaking){speechBuffer='';return;}
+ const raw=speechBuffer.trim();speechBuffer='';
+ if(!raw||s.mode!=='total'||s.winner!==null)return;
+ const n=germanNumber(raw);
+ $('heard').textContent='Gehört: „'+raw+'“';
+ if(n===null||!validScore(n)){status('Keine gültige Gesamtpunktzahl erkannt: „'+raw+'“');return}
+ if(voiceBusy)return;
+ voiceBusy=true;
+ // Bei Double-Out muss ein Checkout weiterhin bestätigt werden, da die
+ // Gesamtpunktzahl nicht verrät, ob der letzte Dart ein Doppel war.
+ applyTotal(n);
+ setTimeout(()=>{voiceBusy=false},1100);
+}
+function queueSpeech(){clearTimeout(speechTimer);speechTimer=setTimeout(commitSpeech,1250)}
+function startRec(){
+ if(!rec||phase!=='idle'||speaking||s.mode!=='total'||!wantAuto)return;
+ clearTimeout(restart);restart=null;
+ phase='starting';micUI();
+ try{rec.start()}catch(e){
+  // Chrome meldet gelegentlich "already started", solange eine alte Sitzung endet.
+  // Nicht sofort erneut starten: erst auf onend warten.
+  phase='stopping';micUI();
+  status('Mikrofon wartet auf Freigabe der vorherigen Sitzung …');
+  try{rec.abort()}catch{}
+ }
+}
+function stopRec(){
+ clearTimeout(restart);restart=null;
+ clearTimeout(speechTimer);speechTimer=null;speechBuffer='';
+ if(phase==='idle'){micUI();return}
+ phase='stopping';micUI();
+ try{rec?.abort()}catch{}
+ // Nur das onend-Ereignis darf wieder auf "idle" setzen.
+}
+if(Speech){
+ rec=new Speech();rec.lang='de-DE';rec.continuous=true;rec.interimResults=true;rec.maxAlternatives=3;
+ rec.onstart=()=>{
+  if(!wantAuto||s.mode!=='total'||speaking){
+   phase='stopping';micUI();try{rec.abort()}catch{};return;
+  }
+  phase='active';micUI();status('🎤 Gesamtpunktzahl ansagen.');
+ };
+ rec.onresult=e=>{
+  if(phase!=='active'||s.mode!=='total'||!wantAuto||speaking)return;
+  let interim=[];
+  for(let i=e.resultIndex;i<e.results.length;i++){
+   const r=e.results[i],raw=r[0]?.transcript?.trim()||'';
+   if(!raw)continue;
+   if(r.isFinal){
+    const t=Date.now();
+    if(raw===lastTranscript&&t-lastTranscriptAt<650)continue;
+    lastTranscript=raw;lastTranscriptAt=t;
+    speechBuffer=(speechBuffer+' '+raw).trim();queueSpeech();
+   }else interim.push(raw);
+  }
+  if(interim.length&&speechBuffer)queueSpeech();
+ };
+ rec.onerror=e=>{
+  status('Mikrofon: '+e.error);
+  if(['not-allowed','service-not-allowed','audio-capture'].includes(e.error)){
+   wantAuto=false;$('auto').checked=false;
+   clearTimeout(restart);restart=null;
+  }
+  // Kein Neustart hier: Chrome liefert anschließend onend.
+  phase='stopping';micUI();
+ };
+ rec.onend=()=>{
+  phase='idle';micUI();
+  if(speechBuffer&&wantAuto)queueSpeech();
+  if(wantAuto&&!speaking&&s.mode==='total'){
+   clearTimeout(restart);
+   restart=setTimeout(startRec,500);
+  }
+ };
+}else{$('auto').disabled=true;$('mic').disabled=true;status('Spracherkennung in diesem Browser nicht verfügbar.')}
+$('auto').onchange=e=>{
+ wantAuto=e.target.checked&&s.mode==='total';
+ $('auto').checked=wantAuto;micUI();
+ if(wantAuto)startRec();else stopRec();
+};
+$('mic').onclick=()=>{
+ if(wantAuto){wantAuto=false;$('auto').checked=false;stopRec()}
+ else if(s.mode==='total'){wantAuto=true;$('auto').checked=true;startRec()}
+ else status('Sprache nur bei Gesamtpunkten. Bitte zuerst „Gesamtpunkte“ wählen.');
+ micUI();
+};
+function refreshVoices(){if(!('speechSynthesis'in window))return;voices=speechSynthesis.getVoices().filter(v=>v.lang.toLowerCase().startsWith('de'));$('voice').innerHTML='';let def=document.createElement('option');def.value='';def.textContent='Android-Standardstimme';$('voice').append(def);voices.forEach(v=>{let o=document.createElement('option');o.value=v.voiceURI;o.textContent=v.name+' ('+v.lang+')';$('voice').append(o)});$('voice').value=voices.some(v=>v.voiceURI===s.prefs.voice)?s.prefs.voice:''}
+if('speechSynthesis'in window){refreshVoices();speechSynthesis.onvoiceschanged=refreshVoices}
+for(let k of ['speak','announceTurn','announceWin']){$(k).checked=!!s.prefs[k];$(k).onchange=()=>{s.prefs[k]=$(k).checked;save()}}$('rate').value=s.prefs.rate;$('rateLabel').textContent=s.prefs.rate+'×';$('rate').oninput=e=>{$('rateLabel').textContent=e.target.value+'×';s.prefs.rate=+e.target.value;save()};$('voice').onchange=e=>{s.prefs.voice=e.target.value;save()};$('testVoice').onclick=()=>{status('Sprachtest gestartet …');say('Willkommen beim Dart. '+name(s.current)+' ist dran. Noch '+s.scores[s.current]+' Punkte.');};
+function statistics(){let p=+$('statPlayer').value,period=$('statPeriod').value,ev=s.events.filter(e=>(period==='all'||(period==='session'?e.sessionId===s.sessionId:e.gameId===s.gameId))&&e.player===p);let darts=ev.filter(e=>e.type==='dart'),totals=ev.filter(e=>e.type==='total'),wins=ev.filter(e=>e.type==='win').length;let points=darts.filter(e=>!e.bust).reduce((a,e)=>a+e.value,0)+totals.filter(e=>!e.bust).reduce((a,e)=>a+e.value,0);let attempts=darts.length+totals.length*3;let avg=attempts?((points/attempts)*3).toFixed(1).replace('.',','):'–';let visits=totals.map(e=>e.value);let byGame={};darts.forEach(e=>(byGame[e.gameId+'|'+e.date.slice(0,16)]??=[]).push(e.value)); // for best visit, use recorded consecutive darts
+let best=0,run=0,c=0;ev.forEach(e=>{if(e.type==='dart'){run+=e.value;c++;if(c===3||e.bust){best=Math.max(best,e.bust?0:run);run=0;c=0}}else if(e.type==='total'){best=Math.max(best,e.bust?0:e.value);run=0;c=0}});best=Math.max(best,run);let cards=[['3-Dart-Average',avg],['Erfasste Pfeile',String(attempts)],['Beste Aufnahme',String(best)],['Gewonnene Legs',String(wins)],['Punkte gesamt',String(points)],['Busts',String(ev.filter(e=>e.type==='bust').length)]];$('statCards').innerHTML='';cards.forEach(([label,value])=>{let box=document.createElement('div');box.className='stat';let a=document.createElement('span'),b=document.createElement('strong');a.textContent=label;b.textContent=value;box.append(a,b);$('statCards').append(box)});let fields={};darts.forEach(e=>{if(e.field)fields[e.field]=(fields[e.field]||0)+1});$('fieldStats').innerHTML='';let sorted=Object.entries(fields).sort((a,b)=>b[1]-a[1]);if(!sorted.length)$('fieldStats').textContent='Noch keine Einzelpfeile erfasst.';sorted.forEach(([f,n])=>{let d=document.createElement('div');d.className='row';d.style.padding='5px 0';let a=document.createElement('span'),b=document.createElement('b');a.textContent=f;b.textContent=n+' Treffer';d.append(a,b);$('fieldStats').append(d)});$('trend').textContent=s.sessions.map(t=>new Date(t.started).toLocaleDateString('de-DE')+': '+s.events.filter(e=>e.sessionId===t.id&&e.player===p&&e.type==='win').length+' Legs gewonnen').join(' · ')}
+function showSessions(){$('sessionList').innerHTML='';s.sessions.slice().reverse().forEach(t=>{let d=document.createElement('div');d.className='session';d.textContent=new Date(t.started).toLocaleString('de-DE')+(t.id===s.sessionId?' · Aktueller Abend':'')+' · '+s.events.filter(e=>e.sessionId===t.id&&e.type==='win').length+' Legs';$('sessionList').append(d)})}
+function tabs(tab){for(let id of ['play','stats','sessions','settings']){$(id).classList.toggle('hidden',id!==tab);document.querySelector('[data-tab="'+id+'"]').classList.toggle('selected',id===tab)}if(tab==='stats'){let sel=$('statPlayer'),v=sel.value;sel.innerHTML='';s.players.forEach((n,i)=>{let o=document.createElement('option');o.value=i;o.textContent=n;sel.append(o)});sel.value=v&&+v<s.players.length?v:'0';statistics()}if(tab==='sessions')showSessions()}
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>tabs(b.dataset.tab));$('statPlayer').onchange=statistics;$('statPeriod').onchange=statistics;
+// Statistikverwaltung: bewusst nur innerhalb des aufklappbaren Bereichs.
+$('deleteStats').onclick=()=>{
+ const scope=$('deleteScope').value;
+ const player=+$('statPlayer').value;
+ const label=scope==='player'?'alle Statistik-Einträge von '+name(player):scope==='session'?'alle Statistik-Einträge des aktuellen Spielabends':'SÄMTLICHE Statistik-Einträge und Spielabende';
+ const affected=s.events.filter(e=>scope==='all'||(scope==='session'?e.sessionId===s.sessionId:e.player===player));
+ if(!affected.length){alert('Für diese Auswahl sind keine Statistik-Einträge vorhanden.');return}
+ const resetLeg=scope==='all'||affected.some(e=>e.gameId===s.gameId);
+ if(!confirm('Wirklich '+label+' löschen?\n\n'+affected.length+' Einträge werden dauerhaft entfernt.'+(resetLeg?' Das aktuelle Leg wird neu gestartet.':'')+'\n\nTipp: Vorher unter Einstellungen eine JSON-Sicherung herunterladen.\n\nAbbrechen = nichts löschen.'))return;
+ const oldEvents=s.events;
+ const oldSessions=s.sessions;
+ const oldSessionId=s.sessionId;
+ const oldGameId=s.gameId;
+ const oldScores=[...s.scores],oldCurrent=s.current,oldWinner=s.winner,oldDarts=s.darts;
+ s.events=s.events.filter(e=>!(scope==='all'||(scope==='session'?e.sessionId===s.sessionId:e.player===player)));
+ if(scope==='all'){
+   s.sessions=[{id:sid(),started:now()}];s.sessionId=s.sessions[0].id;
+ }
+ if(resetLeg){
+   s.gameId=sid();s.scores=s.players.map(()=>s.start);s.current=s.legStarter;s.winner=null;s.darts=[];
+   event('gameStart',{starter:s.current});
+ }
+ s.history=[];
+ if(!save()){
+   s.events=oldEvents;s.sessions=oldSessions;s.sessionId=oldSessionId;s.gameId=oldGameId;
+   s.scores=oldScores;s.current=oldCurrent;s.winner=oldWinner;s.darts=oldDarts;
+   alert('Löschen konnte nicht gespeichert werden. Bitte zuerst eine Sicherung erstellen.');return;
+ }
+ render();statistics();showSessions();
+ $('manageStats').open=false;
+ status('Ausgewählte Statistiken gelöscht.');
+ alert('Die ausgewählten Statistiken wurden gelöscht.');
+};
+$('newSession').onclick=()=>{if(!confirm('Neuen Dart-Abend starten? Die bisherigen Statistiken bleiben gespeichert.'))return;let x={id:sid(),started:now()};s.sessions.push(x);s.sessionId=x.id;s.gameId=sid();s.scores=s.players.map(()=>s.start);s.current=0;s.legStarter=0;s.winner=null;s.darts=[];s.history=[];event('gameStart',{starter:0});updateStarterChoice(0);render();showSessions();status('Neuer Dart-Abend begonnen.')};
+$('export').onclick=()=>{let blob=new Blob([JSON.stringify({format:'dart-scorer-backup',version:4,exported:now(),data:s},null,2)],{type:'application/json'});let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='dart-sicherung-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000)};
+$('import').onclick=async()=>{let f=$('importFile').files[0];if(!f){alert('Bitte zuerst eine JSON-Sicherungsdatei auswählen.');return}try{let x=JSON.parse(await f.text());if(x.format!=='dart-scorer-backup'||x.version!==4||!x.data||!Array.isArray(x.data.events)||!Array.isArray(x.data.sessions)||!Array.isArray(x.data.players)||!Array.isArray(x.data.scores))throw Error('Ungültige Sicherungsdatei');if(!confirm('Alle lokalen Version-4-Daten durch diese Sicherung ersetzen? Bitte vorher eigene Daten exportieren.'))return;let candidate=x.data;candidate.history=[];if(!Number.isInteger(candidate.legStarter))candidate.legStarter=0;let prior=s;s=candidate;if(save()){location.reload()}else{s=prior;alert('Import konnte nicht gespeichert werden. Die bisherige App bleibt unverändert. Bitte Browser-Speicher prüfen.')}}catch(e){alert('Import nicht möglich: '+e.message)}};
+$('start').value=s.start;$('count').value=s.players.length;$('double').checked=s.double;namesUI();$('count').onchange=()=>{namesUI();updateStarterChoice(Math.min(+$('starter').value,+$('count').value-1))};document.querySelectorAll('.name').forEach(x=>x.addEventListener('input',()=>{let selected=+$('starter').value;updateStarterChoice(selected)}));updateStarterChoice(s.winner!==null?(s.legStarter+1)%s.players.length:s.legStarter);$('new').onclick=newGame;
+for(let i=1;i<=20;i++){let b=document.createElement('button');b.textContent=i;b.onclick=()=>addField(i);$('dartgrid').append(b)}document.querySelectorAll('[data-mult]').forEach(b=>b.onclick=()=>{mult=+b.dataset.mult;document.querySelectorAll('[data-mult]').forEach(x=>x.classList.toggle('selected',x===b))});$('miss').onclick=()=>addField(0);$('bull').onclick=()=>addField(25);$('bullseye').onclick=()=>addField(50);$('modeDart').onclick=()=>setMode('dart');$('modeTotal').onclick=()=>setMode('total');$('submit').onclick=()=>applyTotal(+$('points').value);$('undo').onclick=undo;$('skip').onclick=skip;setMode(s.mode);render();
+})();
+</script></body></html>
