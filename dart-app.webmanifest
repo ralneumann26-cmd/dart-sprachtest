@@ -1,0 +1,26 @@
+{
+  "id": "./dart_app.html",
+  "name": "Dart Sprachzähler",
+  "short_name": "Dart Zähler",
+  "description": "Dart-Punkte mit Sprachsteuerung und manueller Einzelpfeilerfassung",
+  "start_url": "./dart_app.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b1220",
+  "theme_color": "#101827",
+  "lang": "de",
+  "icons": [
+    {
+      "src": "./dart-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./dart-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
